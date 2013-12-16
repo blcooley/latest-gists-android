@@ -1,9 +1,8 @@
 package com.coolmodev.latestgists;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Iterator;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -11,45 +10,41 @@ import android.util.Log;
 
 public class Gist {
 
-	private String mUrl;
 	private String mId;
 	private String mUserLogin;
+	private String mDescription;
 	private ArrayList<GistFile> mFiles;
-
+	
 	public Gist(JSONObject object) {
 		super();
 
+		
 		try {
-			this.mUrl = object.getString(JSON.URL);
-			Log.d("Gist", "Parsed the URL");
+			this.mDescription = object.getString(JSON.DESCRIPTION);
 		} catch (JSONException e) {
-			this.mUrl = "";
-			Log.d("Gist", "Failed to parse the URL");
+			this.mDescription = "";
 		}
 
 		try {
 			this.mId = object.getString(JSON.ID);
-			Log.d("Gist", "Parsed the id");
 		} catch (JSONException e) {
 			this.mId = "";
-			Log.d("Gist", "Failed to parse the id");
 		}
 
 		try {
 			JSONObject user = object.getJSONObject(JSON.USER);
 			this.mUserLogin = user.getString(JSON.USER_LOGIN);
-			Log.d("Gist", "Parsed the user login");
 		} catch (JSONException e) {
 			this.mUserLogin = "";
-			Log.d("Gist", "Failed to parse the user login");
 		}
 
 		try {
-			JSONArray files = object.getJSONArray(JSON.FILES);
+			JSONObject files = object.getJSONObject(JSON.FILES);
 			if (files != null) {
 				mFiles = new ArrayList<GistFile>();
-				for (int i = 0; i < files.length(); i++) {
-					JSONObject fileJson = (JSONObject) files.get(i);
+				Iterator<?> keys = files.keys();
+				while (keys.hasNext()) {
+					JSONObject fileJson = (JSONObject) files.get((String)keys.next());
 					String filename = fileJson.getString(JSON.FILES_FILENAME);
 					String language = fileJson.getString(JSON.FILES_LANGUAGE);
 					String url = fileJson.getString(JSON.FILES_RAW_URL);
@@ -64,10 +59,6 @@ public class Gist {
 		}
 	}
 
-	public String getUrl() {
-		return mUrl;
-	}
-
 	public String getId() {
 		return mId;
 	}
@@ -76,10 +67,29 @@ public class Gist {
 		return mUserLogin;
 	}
 
+	public String getDescription() {
+		return mDescription;
+	}
+	
+	public String getLanguages() {
+		StringBuilder languagesBuilder = new StringBuilder();
+		if (mFiles != null) {
+			for (GistFile file : mFiles) {
+				if (file.mLanguage != null) {
+					languagesBuilder.append(file.mLanguage).append(", ");
+				}
+			}
+			int length = languagesBuilder.length();
+			if (length > 1) {
+				languagesBuilder.delete(length-2, length);
+			}
+		}
+		return languagesBuilder.toString();
+	}
+	
 	public ArrayList<GistFile> getFiles() {
-		ArrayList<GistFile> copiedFiles = new ArrayList<GistFile>();
-		Collections.copy(copiedFiles, mFiles);
-		return copiedFiles;
+		// This is a mutable copy, should probably do a deep defensive copy here
+		return mFiles;
 	}
 
 	public class GistFile {
